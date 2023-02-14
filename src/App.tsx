@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFonts, Inter_900Black } from "@expo-google-fonts/dev";
 
 import { Home } from "./screens/Home";
+import { Header } from "./components";
 
 const Tab = createBottomTabNavigator();
 
@@ -30,6 +31,7 @@ function TabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account" color={color} size={size} />
           ),
+            header: () => <Header/>
         }}
       />
     </Tab.Navigator>

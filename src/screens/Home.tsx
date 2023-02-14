@@ -1,17 +1,6 @@
-import {
-  View,
-  Button,
-  Image,
-  Pressable,
-  Text,
-  TextInput,
-  TextInputBase,
-  StyleSheet,
-  SafeAreaView,
-  Animated,
-} from "react-native";
+import { View, Pressable, Text, TextInput, StyleSheet} from "react-native";
 import tw from "twrnc";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { globalStyles } from "../GlobalStyles";
 import { Colors } from "../components/Colors";
 
@@ -57,7 +46,6 @@ export function Home() {
           placeholderTextColor={Colors.lightGray}
           returnKeyType={"done"}
           keyboardType="numeric"
-          inputMode="decimal"
         />
         <Text style={[styles.currency, styles.inputChild]}>SOL</Text>
         <Text style={[styles.maxInput, styles.inputChild]}>Max</Text>

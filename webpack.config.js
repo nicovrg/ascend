@@ -4,7 +4,20 @@ const ReactRefreshWebpackPlugin = require("@pmmmwh/react-refresh-webpack-plugin"
 const fs = require("fs");
 
 module.exports = async function (env, argv) {
-  const config = await createExpoWebpackConfigAsync(env, argv);
+  const config = await createExpoWebpackConfigAsync(
+    {
+      ...env,
+      babel: {
+        dangerouslyAddModulePathsToTranspile: [
+          // Ensure that all packages starting with @tensorflow are
+          // transpiled.
+          "@tensorflow",
+          "@tensorflow-models"
+        ],
+      },
+    },
+    argv
+  );
 
   if (env.mode === "development") {
     config.plugins.push(new ReactRefreshWebpackPlugin());
@@ -36,6 +49,12 @@ module.exports = async function (env, argv) {
     })
   );
 
+  // config.module.rules.push(
+  //   {
+  //     test: /\.(mjs|cjs)$/,
+  //     include: /node_modules/,
+  //     type: "javascript/auto"
+  // });
   // this is brittle but works for now.
   const loaders = config.module.rules.find(
     (rule) => typeof rule.oneOf !== "undefined"
@@ -50,6 +69,12 @@ module.exports = async function (env, argv) {
   urlLoader.use.options.limit = true;
   urlLoader.test = /\.(gif|jpe?g|png|svg|css|woff2?|eot|ttf|otf)$/;
 
+  // config.mode.loaders.push({
+  //   test: /\.js$/,
+  //   use: ["source-map-loader"],
+  //   include: /node_modules/,
+  //   enforce: "pre",
+  // });
   return config;
 };
 

@@ -6,9 +6,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFonts, Inter_900Black } from "@expo-google-fonts/dev";
 
-import { ExamplesScreens } from "./screens/ExamplesScreen";
-import { HomeScreen } from "./screens/HomeScreen";
-import { TokenListNavigator } from "./screens/TokenNavigator";
+import { Home } from "./screens/Home";
 
 const Tab = createBottomTabNavigator();
 
@@ -17,37 +15,20 @@ function TabNavigator() {
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
-        tabBarActiveTintColor: "#e91e63",
+        tabBarActiveTintColor: "#FFFFFF",
+        tabBarStyle: {
+          backgroundColor: "rgba(34,36,40,1)",
+          borderTopWidth: 0,
+        },
       }}
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={Home}
         options={{
           tabBarLabel: "Home",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="List"
-        component={TokenListNavigator}
-        options={{
-          headerShown: false,
-          tabBarLabel: "Tokens",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="bank" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Examples"
-        component={ExamplesScreens}
-        options={{
-          tabBarLabel: "Examples",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home" color={color} size={size} />
           ),
         }}
       />

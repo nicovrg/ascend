@@ -1,59 +1,50 @@
 import * as React from "react";
-import { View, StyleSheet, Text, Platform, StatusBar } from "react-native";
-import { Dimensions } from "react-native";
-import { Camera, CameraType } from "expo-camera";
-// import * as mobilenet from "@tensorflow-models/mobilenet";
+import { useEffect, useState } from "react";
+
+import { View, StyleSheet, Text, Platform } from "react-native";
+import Svg, { Circle, Line } from "react-native-svg";
+
+import * as tf from "@tensorflow/tfjs-core";
 import * as posenet from "@tensorflow-models/posenet";
 import * as poseDetection from "@tensorflow-models/pose-detection";
-import { GLView, ExpoWebGLRenderingContext } from "expo-gl";
-import Svg, { Circle, Rect, G, Line } from "react-native-svg";
-import * as tf from "@tensorflow/tfjs-core";
-// Register one of the TF.js backends.
 import "@tensorflow/tfjs-backend-webgl";
 
-import {
-  fetch,
-  decodeJpeg,
-  cameraWithTensors,
-  bundleResourceIO,
-} from "@tensorflow/tfjs-react-native";
-import { useEffect, useState } from "react";
+import {cameraWithTensors } from "@tensorflow/tfjs-react-native";
+
+import { Camera, CameraType } from "expo-camera";
+
 import { globalStyles } from "../GlobalStyles";
 
 //uses expo camera, adds tensors
 const TensorCamera_ = cameraWithTensors(Camera);
 
-let model: posenet.PoseNet;
-let detector: poseDetection.PoseDetector | null;
 let frameCount = 0;
-let predictionRate = 1;
-
+let predictionFrequency = 1;
 let elbowAngle = 999;
-let backAngle = 0;
 let reps = 0;
 let UP = false;
 
+let model: posenet.PoseNet;
+let detector: poseDetection.PoseDetector | null;
+
 const TensorCamera: React.FC = (): React.ReactElement => {
-  const [hasPermission, setHasPermission] = useState<null | boolean>(null);
   const camera = React.useRef(null);
+  const [hasPermission, setHasPermission] = useState<null | boolean>(null);
   const [modelReady, setModelReady] = useState(false);
   const [pose, setPose] = useState<posenet.Pose | null>(null);
 
+  const CONFIDENCE_THRESHOLD = 0.3;
+  const flipHorizontal = Platform.OS === "ios" ? true : false;
   const tensorDims = { height: 200, width: 152, depth: 3 };
 
   useEffect(() => {
     (async () => {
       //------------------------PERMISSIONS-------------------------
-      const { status }: any =
-        await Camera.requestCameraPermissionsAsync().catch((e) =>
-          console.log(e)
-        );
+      const { status }: any = await Camera.requestCameraPermissionsAsync().catch((e) => console.log(e));
       setHasPermission(status === "granted");
-
       //-------------------------TF_INIT-----------------------------
       await tf.ready().catch((e) => console.log(e));
       tf.getBackend();
-
       model = await posenet.load({
         architecture: "MobileNetV1",
         outputStride: 16,
@@ -62,9 +53,7 @@ const TensorCamera: React.FC = (): React.ReactElement => {
         quantBytes: 2,
       });
 
-      const detectorConfig = {
-        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-      };
+      const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
       const detector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
         detectorConfig
@@ -73,22 +62,12 @@ const TensorCamera: React.FC = (): React.ReactElement => {
     })();
   }, []);
 
-  const handleCameraStream = (
-    images: IterableIterator<tf.Tensor3D>,
-    updateCameraPreview: () => void,
-    gl: ExpoWebGLRenderingContext,
-    cameraTexture: WebGLTexture
-  ) => {
-    if (!images) return;
+  const predictOnCameraStream = (images: IterableIterator<tf.Tensor3D>) => {
+  if (!images) return;
     const loop = async () => {
-      if (frameCount % predictionRate === 0) {
+      if (frameCount % predictionFrequency === 0) {
         const imageTensor = images.next().value;
-
-        let flipHorizontal = Platform.OS === "ios" ? true : false;
-        // try {
-        const _pose = await model.estimateSinglePose(imageTensor, {
-          flipHorizontal,
-        });
+        const _pose = await model.estimateSinglePose(imageTensor, { flipHorizontal });
         const poses = await detector?.estimatePoses(imageTensor);
         setPose(_pose);
         tf.dispose([imageTensor]);
@@ -99,13 +78,53 @@ const TensorCamera: React.FC = (): React.ReactElement => {
     loop();
   };
 
+  const updateArmAngle = () => {
+    if (!pose) return;
+    let leftShoulder = pose.keypoints[11];
+    let leftElbow = pose.keypoints[13];
+    let leftWrist = pose.keypoints[15];
+
+    let angle = (
+      Math.atan2(
+        leftWrist.position.y - leftElbow.position.y,
+        leftWrist.position.x - leftElbow.position.x
+      ) -
+      Math.atan2(
+        leftShoulder.position.y - leftElbow.position.y,
+        leftShoulder.position.x - leftElbow.position.x
+      )) *
+      (180 / Math.PI);
+      
+      if ((leftWrist.score, leftElbow.score, leftShoulder.score) > CONFIDENCE_THRESHOLD)
+        elbowAngle = angle;
+  };
+
+  const isElbowAboveNose = () => {
+    if (!pose) return;
+    let elbowAboveNose = false;
+    if (pose.keypoints[0].position.y > pose.keypoints[15].position.y)
+      elbowAboveNose = true;
+    return elbowAboveNose;
+  };
+
+  const updatePosition = () => {
+    updateArmAngle();
+    var elbowAboveNose = isElbowAboveNose();
+    if (!elbowAngle) return;
+    if (elbowAngle > 170 && elbowAngle < 200 && UP == false) {
+      reps = reps + 1;
+      UP = true;
+    }
+    if (elbowAboveNose && Math.abs(elbowAngle) > 70 && Math.abs(elbowAngle) < 100)
+      UP = false;
+  };
+  
   const renderPose = () => {
     updatePosition();
 
-    const MIN_KEYPOINT_SCORE = 0.3;
     if (pose != null) {
       const keypoints = pose.keypoints
-        .filter((k) => k.score > MIN_KEYPOINT_SCORE)
+        .filter((k) => k.score > CONFIDENCE_THRESHOLD)
         .map((k, i) => {
           return (
             <Circle
@@ -119,10 +138,7 @@ const TensorCamera: React.FC = (): React.ReactElement => {
           );
         });
 
-      const adjacentKeypoints = posenet.getAdjacentKeyPoints(
-        pose.keypoints,
-        MIN_KEYPOINT_SCORE
-      );
+      const adjacentKeypoints = posenet.getAdjacentKeyPoints(pose.keypoints, CONFIDENCE_THRESHOLD);
       const skeleton = adjacentKeypoints.map(([from, to], i) => {
         return (
           <Line
@@ -152,85 +168,21 @@ const TensorCamera: React.FC = (): React.ReactElement => {
     }
   };
 
-  const updateArmAngle = () => {
-    if (!pose) return;
-    let leftWrist = pose.keypoints[15];
-    let leftShoulder = pose.keypoints[11];
-    let leftElbow = pose.keypoints[13];
 
-    let angle =
-      (Math.atan2(
-        leftWrist.position.y - leftElbow.position.y,
-        leftWrist.position.x - leftElbow.position.x
-      ) -
-        Math.atan2(
-          leftShoulder.position.y - leftElbow.position.y,
-          leftShoulder.position.x - leftElbow.position.x
-        )) *
-      (180 / Math.PI);
 
-    if (angle < 0) {
-      //angle = angle + 360;
-    }
-
-    if (
-      leftWrist.score > 0.3 &&
-      leftElbow.score > 0.3 &&
-      leftShoulder.score > 0.3
-    ) {
-      //console.log(angle);
-      elbowAngle = angle;
-    } else {
-      //console.log('Cannot see elbow');
-    }
-  };
-
-  const isElbowAboveNose = () => {
-    if (!pose) return;
-    let elbowAboveNose = false;
-    if (pose.keypoints[0].position.y > pose.keypoints[15].position.y) {
-      elbowAboveNose = true;
-    }
-    return elbowAboveNose;
-  };
-
-  const updatePosition = () => {
-    updateArmAngle();
-    var elbowAboveNose = isElbowAboveNose();
-    if (!elbowAngle) return;
-    if (elbowAngle > 170 && elbowAngle < 200 && UP == false) {
-      reps = reps + 1;
-      UP = true;
-    }
-    if (
-      elbowAboveNose &&
-      Math.abs(elbowAngle) > 70 &&
-      Math.abs(elbowAngle) < 100
-    ) {
-      UP = false;
-    }
-  };
-
-  if (hasPermission === null) {
-    return <View />;
-  }
-  if (hasPermission === false) {
+  if (hasPermission === null)
+    return <Text>Problem with permission settings</Text>;
+  else if (hasPermission === false)
     return <Text>No access to camera</Text>;
-  }
-  if (!modelReady) {
+  if (!modelReady)
     return <Text>Loading</Text>;
-  }
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="dark-content" />
       <View style={styles.textWrapper}>
         <Text style={globalStyles.text}>{`Reps: ${reps}`}</Text>
         <Text style={globalStyles.text}>{`elbow angle: ${elbowAngle}`}</Text>
-        <Text style={globalStyles.text}>
-          {" "}
-          {`position: ${UP === true ? "UP" : "DOWN"}`}
-        </Text>
+        <Text style={globalStyles.text}>{`position: ${UP === true ? "UP" : "DOWN"}`}</Text>
       </View>
       <TensorCamera_
         ref={camera}
@@ -238,7 +190,7 @@ const TensorCamera: React.FC = (): React.ReactElement => {
         type={CameraType.front}
         cameraTextureHeight={1920}
         cameraTextureWidth={1080}
-        onReady={handleCameraStream}
+        onReady={predictOnCameraStream}
         resizeHeight={tensorDims.height}
         resizeWidth={tensorDims.width}
         resizeDepth={tensorDims.depth}

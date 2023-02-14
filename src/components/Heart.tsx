@@ -1,5 +1,5 @@
-import Svg, { Path, LinearGradient, Stop, Line} from "react-native-svg";
-import { StyleSheet, View } from "react-native";
+import Svg, { Path, LinearGradient, Stop } from "react-native-svg";
+import { StyleSheet } from "react-native";
 import * as React from "react"
 
 
@@ -32,7 +32,7 @@ const Heart:React.FC<HeartProps> = ({full} : HeartProps) => {
 export default Heart;
 
 const styles = StyleSheet.create({
-  heartShape: {
+  heartShape: {
     marginRight: 10,
     width: 30,
     height: 30

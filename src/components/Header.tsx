@@ -1,18 +1,12 @@
 import React from "react";
-import { Image, StyleSheet, useColorScheme, View} from "react-native";
+import { Image, StyleSheet, useColorScheme, View } from "react-native";
 import { Colors } from "./Colors";
 import { Life } from "./Life";
 
 export function Header() {
-
   const isDarkMode = useColorScheme() === "dark";
   return (
-    <View
-      style={[
-        styles.background,
-        { backgroundColor: isDarkMode ? Colors.darker : Colors.lighter },
-      ]}
-    >
+    <View style={[styles.background, { backgroundColor: isDarkMode ? Colors.darker : Colors.lighter }]}>
       <Life/>
       <Image
         source={require("../../assets/icon.png")}

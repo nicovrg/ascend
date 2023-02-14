@@ -1,16 +1,10 @@
 import React from "react";
-import {
-  Image,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from "react-native";
+import { Image, StyleSheet, useColorScheme, View} from "react-native";
 import { Colors } from "./Colors";
 import { Life } from "./Life";
 
 export function Header() {
+
   const isDarkMode = useColorScheme() === "dark";
   return (
     <View

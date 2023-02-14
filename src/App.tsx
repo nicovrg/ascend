@@ -9,6 +9,7 @@ import { useFonts, Inter_900Black } from "@expo-google-fonts/dev";
 import { ExamplesScreens } from "./screens/ExamplesScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { TokenListNavigator } from "./screens/TokenNavigator";
+import { Header } from "./components";
 
 const Tab = createBottomTabNavigator();
 
@@ -28,6 +29,7 @@ function TabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account" color={color} size={size} />
           ),
+            header: () => <Header/>
         }}
       />
       <Tab.Screen
@@ -39,6 +41,8 @@ function TabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="bank" color={color} size={size} />
           ),
+          header: () => <Header/>
+
         }}
       />
       <Tab.Screen
@@ -49,6 +53,8 @@ function TabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home" color={color} size={size} />
           ),
+          header: () => <Header/>
+
         }}
       />
     </Tab.Navigator>

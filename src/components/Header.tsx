@@ -20,7 +20,6 @@ export function Header() {
       ]}
     >
       <Life/>
-      {/* <Text style={styles.title}>Ascend</Text> */}
       <Image
         source={require("../../assets/icon.png")}
         style={{ width: 60, height: 60, margin: 10 }}

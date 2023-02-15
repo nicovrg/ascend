@@ -8,6 +8,10 @@ import { useFonts, Inter_900Black } from "@expo-google-fonts/dev";
 
 import { Home } from "./screens/Home";
 import { Header } from "./components";
+import { ExamplesScreens } from "./screens/ExamplesScreen";
+import { HomeScreen } from "./screens/HomeScreen";
+import { TokenListNavigator } from "./screens/TokenNavigator";
+import TensorCamera from "./screens/TensorCamera";
 
 const Tab = createBottomTabNavigator();
 
@@ -27,15 +31,26 @@ function TabNavigator() {
         name="Home"
         component={Home}
         options={{
-          tabBarLabel: "Home",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account" color={color} size={size} />
+            <MaterialCommunityIcons name="home" color={color} size={30} />
           ),
-            header: () => <Header/>
+          header: () => <Header/>
+          
         }}
       />
+      <Tab.Screen
+      name="TensorCamera"
+      component={TensorCamera}
+      options={{
+        tabBarIcon: ({ color, size }) => (
+          <MaterialCommunityIcons name="account" color={color} size={30} />
+        ),
+        header: () => <Header/>
+        
+      }}
+      />
     </Tab.Navigator>
-  );
+);
 }
 
 function App() {
